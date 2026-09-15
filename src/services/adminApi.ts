@@ -1165,6 +1165,15 @@ export interface InternshipApplication {
   resumeUrl: string;
   coverLetter: string;
   portfolioUrl?: string;
+  category?: 'paid' | 'self-funded';
+  tier?: string;
+  yearOfStudy?: string;
+  githubUrl?: string;
+  linkedinUrl?: string;
+  personalPortfolioUrl?: string;
+  paymentStatus?: 'free' | 'pending' | 'paid' | 'failed';
+  paymentId?: string;
+  razorpayOrderId?: string;
   status: 'pending' | 'under-review' | 'shortlisted' | 'rejected';
   createdAt: string;
 }
@@ -1177,12 +1186,21 @@ const toInternshipApplication = (i: Record<string, unknown>): InternshipApplicat
     name: (i.name as string) || '',
     email: (i.email as string) || '',
     mobile: (i.mobile as string) || '',
-    skills: Array.isArray(i.skills) ? (i.skills as string[]) : [],
+    skills: Array.isArray(i.skills) ? (i.skills as string[]) : typeof i.skills === 'string' ? [i.skills] : [],
     resumeUrl: (i.resumeUrl as string) || '',
     coverLetter: (i.coverLetter as string) || '',
     portfolioUrl: (i.portfolioUrl as string) || '',
-    status: (i.status as InternshipApplication['status']) || 'pending',
-    createdAt: (i.createdAt as string) || '',
+    category: (i.category as 'paid' | 'self-funded'),
+    tier: (i.tier as string),
+    yearOfStudy: (i.yearOfStudy as string),
+    githubUrl: (i.githubUrl as string),
+    linkedinUrl: (i.linkedinUrl as string),
+    personalPortfolioUrl: (i.personalPortfolioUrl as string),
+    paymentStatus: (i.paymentStatus as 'free' | 'pending' | 'paid' | 'failed'),
+    paymentId: (i.paymentId as string),
+    razorpayOrderId: (i.razorpayOrderId as string),
+    status: (i.status as 'pending' | 'under-review' | 'shortlisted' | 'rejected') || 'pending',
+    createdAt: (i.createdAt as string) || new Date().toISOString(),
   };
 };
 

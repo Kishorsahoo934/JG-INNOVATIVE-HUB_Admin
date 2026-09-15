@@ -81,18 +81,11 @@ const sidebarSections: SidebarSection[] = [
     ]
   },
   {
-    title: 'Academy',
+    title: 'Programs',
     icon: GraduationCap,
     items: [
-      { name: 'Tutors & Academy', path: '/tutors', icon: GraduationCap },
       { name: 'Workshops', path: '/workshops', icon: Calendar },
-    ]
-  },
-  {
-    title: 'Careers',
-    icon: Briefcase,
-    items: [
-      { name: 'Internship Apps', path: '/internships', icon: Briefcase },
+      { name: 'Internships', path: '/internships', icon: Briefcase },
     ]
   }
 ];
