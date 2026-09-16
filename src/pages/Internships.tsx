@@ -145,6 +145,23 @@ const Internships: React.FC = () => {
       ),
     },
     {
+      key: 'category',
+      header: 'Category',
+      render: (app: InternshipApplication) => (
+        <div className="flex flex-col gap-1">
+          <Badge variant={app.category === 'paid' ? 'default' : 'secondary'} className="text-[10px] w-fit">
+            {app.category === 'paid' ? 'Paid (₹49)' : 'Self Funded'}
+          </Badge>
+          {app.tier && <span className="text-[10px] text-muted-foreground">{app.tier}</span>}
+          {app.paymentStatus === 'paid' && (
+            <Badge variant="outline" className="text-[9px] w-fit bg-green-500/10 text-green-500 border-none px-1 py-0">
+              Paid
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
       key: 'skills',
       header: 'Key Skills',
       render: (app: InternshipApplication) => (
@@ -313,9 +330,46 @@ const Internships: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <Badge variant={getStatusBadgeVariant(selectedApp.status)} className="text-[10px] uppercase font-bold tracking-wider self-start shrink-0">
-                {selectedApp.status.replace('-', ' ')}
-              </Badge>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <Badge variant={getStatusBadgeVariant(selectedApp.status)} className="text-[10px] uppercase font-bold tracking-wider">
+                  {selectedApp.status.replace('-', ' ')}
+                </Badge>
+                <Badge variant={selectedApp.category === 'paid' ? 'default' : 'secondary'} className="text-[10px] uppercase font-bold tracking-wider">
+                  {selectedApp.category === 'paid' ? 'Paid Program' : 'Self Funded'}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Education & Application Info */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {selectedApp.yearOfStudy && (
+                <div>
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Year of Study</h4>
+                  <p className="text-sm font-medium text-foreground">{selectedApp.yearOfStudy}</p>
+                </div>
+              )}
+              {selectedApp.tier && (
+                <div>
+                  <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Tier / Duration</h4>
+                  <p className="text-sm font-medium text-foreground">{selectedApp.tier}</p>
+                </div>
+              )}
+              {selectedApp.category === 'paid' && (
+                <>
+                  <div>
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Payment Status</h4>
+                    <Badge variant="outline" className={`text-[10px] uppercase ${selectedApp.paymentStatus === 'paid' ? 'bg-green-500/10 text-green-500 border-none' : ''}`}>
+                      {selectedApp.paymentStatus || 'Pending'}
+                    </Badge>
+                  </div>
+                  {selectedApp.paymentId && (
+                    <div>
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Payment ID</h4>
+                      <p className="text-[11px] font-mono text-muted-foreground break-all">{selectedApp.paymentId}</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Skills */}
@@ -329,6 +383,30 @@ const Internships: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Social / Portfolio Links */}
+            {(selectedApp.githubUrl || selectedApp.linkedinUrl || selectedApp.personalPortfolioUrl) && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Online Profiles</h4>
+                <div className="flex flex-wrap gap-3">
+                  {selectedApp.githubUrl && (
+                    <a href={selectedApp.githubUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1.5">
+                      <Globe className="w-4 h-4" /> GitHub
+                    </a>
+                  )}
+                  {selectedApp.linkedinUrl && (
+                    <a href={selectedApp.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1.5">
+                      <Globe className="w-4 h-4" /> LinkedIn
+                    </a>
+                  )}
+                  {selectedApp.personalPortfolioUrl && (
+                    <a href={selectedApp.personalPortfolioUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1.5">
+                      <Globe className="w-4 h-4" /> Portfolio
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Links / Attachments */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -348,25 +426,23 @@ const Internships: React.FC = () => {
                 </Button>
               </div>
 
-              <div className="p-4 bg-muted/30 border border-border/60 rounded-xl flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">Portfolio/Projects</p>
-                    <p className="text-[10px] text-muted-foreground">{selectedApp.portfolioUrl ? 'External Link' : 'Not provided'}</p>
+              {selectedApp.portfolioUrl && (
+                <div className="p-4 bg-muted/30 border border-border/60 rounded-xl flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="text-xs font-semibold text-foreground">External Portfolio</p>
+                      <p className="text-[10px] text-muted-foreground">Web Link</p>
+                    </div>
                   </div>
-                </div>
-                {selectedApp.portfolioUrl ? (
                   <Button size="sm" variant="outline" className="h-8 gap-1" asChild>
                     <a href={selectedApp.portfolioUrl} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="w-3.5 h-3.5" />
-                      Open
+                      Visit
                     </a>
                   </Button>
-                ) : (
-                  <span className="text-xs text-muted-foreground italic mr-2">N/A</span>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Cover Letter */}
