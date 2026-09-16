@@ -24,6 +24,7 @@ import Workshops from "@/pages/Workshops";
 import Internships from "@/pages/Internships";
 import Gallery from "@/pages/Gallery";
 import Projects from "@/pages/Projects";
+import ProductDevelopment from "@/pages/ProductDevelopment";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
                 <Route path="/workshops" element={<Workshops />} />
                 <Route path="/internships" element={<Internships />} />
                 <Route path="/projects" element={<Projects />} />
+                <Route path="/product-development" element={<ProductDevelopment />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
               
@@ -75,3 +77,4 @@ const App = () => (
 );
 
 export default App;
+

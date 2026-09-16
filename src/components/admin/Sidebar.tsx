@@ -74,10 +74,17 @@ const sidebarSections: SidebarSection[] = [
     ]
   },
   {
-    title: 'Projects',
+    title: 'Project Kits',
     icon: Layers,
     items: [
-      { name: 'Projects', path: '/projects', icon: Layers },
+      { name: 'Project Kits', path: '/projects', icon: Layers },
+    ]
+  },
+  {
+    title: 'Product Development',
+    icon: Package,
+    items: [
+      { name: 'Product Development', path: '/product-development', icon: Package },
     ]
   },
   {
@@ -105,7 +112,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [openSections, setOpenSections] = React.useState<Record<string, boolean>>({
     General: true,
     'E-Shop': true,
-    Projects: true,
+    'Project Kits': true,
+      'Product Development': true,
     Academy: true,
     Careers: true,
   });
@@ -320,4 +328,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 };
 
 export default Sidebar;
+
+
 

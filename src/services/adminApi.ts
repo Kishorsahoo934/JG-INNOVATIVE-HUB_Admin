@@ -1336,6 +1336,67 @@ export const projectsApi = {
   },
 };
 
+// ============ DEVELOPED PRODUCTS ============
+
+export interface DevelopedProduct {
+  id: string;
+  name: string;
+  description: string;
+  longDescription: string;
+  tag: string;
+  category: string;
+  images: string[];
+  features: string[];
+  status: 'Available' | 'Coming Soon' | 'Under Research';
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+const toDevelopedProduct = (p: Record<string, unknown>): DevelopedProduct => ({
+  id: (p._id || p.id)?.toString() || '',
+  name: (p.name as string) || '',
+  description: (p.description as string) || '',
+  longDescription: (p.longDescription as string) || '',
+  tag: (p.tag as string) || '',
+  category: (p.category as string) || '',
+  images: Array.isArray(p.images) ? (p.images as Array<{ url?: string } | string>).map((i) => (typeof i === 'string' ? i : i?.url || '')).filter(Boolean) : [],
+  features: Array.isArray(p.features) ? (p.features as string[]) : [],
+  status: (p.status as 'Available' | 'Coming Soon' | 'Under Research') || 'Available',
+  isActive: p.isActive !== false,
+  createdAt: (p.createdAt as string) || '',
+  updatedAt: (p.updatedAt as string) || '',
+});
+
+export const developedProductsApi = {
+  getAll: async () => {
+    const res = await apiRequestRaw('/developed-products?admin=true');
+    const arr = res.data || res;
+    return Array.isArray(arr) ? arr.map(toDevelopedProduct) : [];
+  },
+  getById: async (id: string) => {
+    const res = await apiRequestRaw('/developed-products/' + id);
+    return toDevelopedProduct(res.data || res);
+  },
+  create: async (data: Partial<DevelopedProduct>) => {
+    const res = await apiRequestRaw('/developed-products', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return toDevelopedProduct(res.data || res);
+  },
+  update: async (id: string, data: Partial<DevelopedProduct>) => {
+    const res = await apiRequestRaw('/developed-products/' + id, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return toDevelopedProduct(res.data || res);
+  },
+  delete: async (id: string) => {
+    return apiRequestRaw('/developed-products/' + id, { method: 'DELETE' });
+  },
+};
+
 // Export all APIs
 export const adminApi = {
   auth: authApi,
@@ -1355,6 +1416,11 @@ export const adminApi = {
   internships: internshipsApi,
   gallery: galleryApi,
   projects: projectsApi,
+    developedProducts: developedProductsApi,
 };
 
 export default adminApi;
+
+
+
+
