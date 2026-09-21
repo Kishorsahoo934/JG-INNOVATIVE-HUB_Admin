@@ -1138,7 +1138,12 @@ export const workshopsApi = {
     });
     return toWorkshop((res.data || res) as Record<string, unknown>);
   },
-  update: async (workshopId: string, payload: Partial<Workshop>): Promise<Workshop> => {
+      delete: async (workshopId: string): Promise<any> => {
+      return apiRequestRaw(`/admin/workshops/${workshopId}`, {
+        method: 'DELETE',
+      });
+    },
+    update: async (workshopId: string, payload: Partial<Workshop>): Promise<Workshop> => {
     const res = await apiRequestRaw(`/admin/workshops/${workshopId}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -1210,7 +1215,14 @@ export const internshipsApi = {
     const arr = res.data || res;
     return (Array.isArray(arr) ? arr : []).map((i: Record<string, unknown>) => toInternshipApplication(i));
   },
-  updateStatus: async (applicationId: string, status: InternshipApplication['status']): Promise<any> => {
+  update: async (applicationId: string, payload: Partial<InternshipApplication>): Promise<InternshipApplication> => {
+      const res = await apiRequestRaw('/admin/internships/' + applicationId, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      return toInternshipApplication((res.data || res) as Record<string, unknown>);
+    },
+    updateStatus: async (applicationId: string, status: InternshipApplication['status']): Promise<any> => {
     return apiRequestRaw(`/admin/internships/${applicationId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
@@ -1420,6 +1432,8 @@ export const adminApi = {
 };
 
 export default adminApi;
+
+
 
 
 

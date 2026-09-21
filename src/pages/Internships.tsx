@@ -6,6 +6,15 @@ import {
   ExternalLink, FileText, Globe, Check, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -23,6 +32,39 @@ const Internships: React.FC = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isUpdatingId, setIsUpdatingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<InternshipApplication>>({});
+  const [isEditing, setIsEditing] = useState(false);
+
+  const openEditForm = (app: InternshipApplication) => {
+    setEditForm({
+      name: app.name,
+      email: app.email,
+      mobile: app.mobile,
+      category: app.category,
+      tier: app.tier,
+      paymentStatus: app.paymentStatus,
+      yearOfStudy: app.yearOfStudy,
+    });
+    setSelectedApp(app);
+    setIsEditOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedApp) return;
+    setIsEditing(true);
+    try {
+      await adminApi.internships.update(selectedApp.id, editForm);
+      toast({ title: 'Success', description: 'Application updated successfully' });
+      setIsEditOpen(false);
+      fetchApplications();
+    } catch (err: any) {
+      toast({ title: 'Update Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsEditing(false);
+    }
+  };
   const pageSize = 10;
 
   const fetchApplications = async () => {
@@ -481,9 +523,71 @@ const Internships: React.FC = () => {
             </div>
           </div>
         )}
-      </Modal>
+            </Modal>
+
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Internship Application</DialogTitle>
+            <DialogDescription>Modify application details.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <Label>Name</Label>
+              <Input required value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input required value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Mobile</Label>
+              <Input required value={editForm.mobile || ''} onChange={e => setEditForm({ ...editForm, mobile: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Category</Label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-[#161c28] px-3 py-2 text-sm" value={editForm.category || 'paid'} onChange={e => setEditForm({ ...editForm, category: e.target.value as any })}>
+                  <option value="paid">Paid</option>
+                  <option value="self-funded">Self Funded</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>Tier</Label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-[#161c28] px-3 py-2 text-sm" value={editForm.tier || ''} onChange={e => setEditForm({ ...editForm, tier: e.target.value })}>
+                  <option value="">None</option>
+                  <option value="1-month">1 Month</option>
+                  <option value="45-days">45 Days</option>
+                  <option value="2-month">2 Months</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Payment Status</Label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-[#161c28] px-3 py-2 text-sm" value={editForm.paymentStatus || 'free'} onChange={e => setEditForm({ ...editForm, paymentStatus: e.target.value as any })}>
+                  <option value="free">Free</option>
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>Year of Study</Label>
+                <Input value={editForm.yearOfStudy || ''} onChange={e => setEditForm({ ...editForm, yearOfStudy: e.target.value })} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isEditing}>{isEditing ? 'Saving...' : 'Save Changes'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default Internships;
+
+
