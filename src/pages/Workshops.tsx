@@ -26,7 +26,8 @@ const Workshops: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isTogglingId, setIsTogglingId] = useState<string | null>(null);
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [form, setForm] = useState({
@@ -41,6 +42,39 @@ const Workshops: React.FC = () => {
     meetingLink: '',
     googleFormLink: ''
   });
+
+  const openForm = (workshop?: Workshop) => {
+    if (workshop) {
+      setSelectedWorkshop(workshop);
+      setForm({
+        title: workshop.title || '',
+        description: workshop.description || '',
+        hostName: workshop.hostName || '',
+        hostLinkedIn: workshop.hostLinkedIn || '',
+        thumbnail: workshop.thumbnail || '',
+        date: workshop.date ? new Date(workshop.date).toISOString().split('T')[0] : '',
+        time: workshop.time || '',
+        duration: workshop.duration || '',
+        meetingLink: workshop.meetingLink || '',
+        googleFormLink: workshop.googleFormLink || ''
+      });
+    } else {
+      setSelectedWorkshop(null);
+      setForm({
+        title: '',
+        description: '',
+        hostName: '',
+        hostLinkedIn: '',
+        thumbnail: '',
+        date: '',
+        time: '',
+        duration: '',
+        meetingLink: '',
+        googleFormLink: ''
+      });
+    }
+    setIsFormOpen(true);
+  };
 
   const fetchWorkshops = async () => {
     setIsLoading(true);
@@ -112,7 +146,7 @@ const Workshops: React.FC = () => {
     }
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.description || !form.date || !form.time || !form.duration || !form.meetingLink || !form.googleFormLink || !form.hostName) {
       toast({
@@ -125,12 +159,16 @@ const Workshops: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await adminApi.workshops.create(form);
+      if (selectedWorkshop) {
+        await adminApi.workshops.update(selectedWorkshop.id, form);
+      } else {
+        await adminApi.workshops.create(form);
+      }
       toast({
         title: 'Success!',
-        description: 'Workshop created successfully.',
+        description: selectedWorkshop ? 'Workshop updated successfully.' : 'Workshop created successfully.',
       });
-      setIsCreateOpen(false);
+      setIsFormOpen(false);
       setForm({
         title: '',
         description: '',
@@ -147,8 +185,8 @@ const Workshops: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       toast({
-        title: 'Creation Failed',
-        description: err.message || 'Could not create workshop.',
+        title: 'Save Failed',
+        description: err.message || 'Could not save workshop.',
         variant: 'destructive'
       });
     } finally {
@@ -188,7 +226,7 @@ const Workshops: React.FC = () => {
             Manage live workshops. Create and schedule new live sessions.
           </p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="md:self-end font-semibold gap-2">
+        <Button onClick={() => openForm()} className="md:self-end font-semibold gap-2">
           <Plus className="w-4 h-4" />
           Create Workshop
         </Button>
@@ -330,31 +368,26 @@ const Workshops: React.FC = () => {
               {/* Homepage Feature Toggle */}
               <div className="p-4 border-t border-border/60 bg-[#161c28]/45 flex items-center justify-between gap-2.5">
                 <span className="text-xs text-muted-foreground font-semibold">Show on Homepage</span>
-                <Button
-                  size="sm"
-                  variant={workshop.showOnHomepage ? "default" : "outline"}
+                <div className="flex gap-2"><Button size="sm" variant="destructive" onClick={async () => { if(confirm("Are you sure?")) { await adminApi.workshops.delete(workshop.id); fetchWorkshops(); } }}>Delete</Button><Button size="sm" variant="outline" onClick={() => openForm(workshop)}>Edit</Button><Button size="sm" variant={workshop.showOnHomepage ? "default" : "outline"}
                   className="text-xs gap-1 font-semibold"
                   disabled={isTogglingId === workshop.id}
                   onClick={() => handleToggleHomepage(workshop.id, workshop.showOnHomepage)}
                 >
-                  {workshop.showOnHomepage ? "Featured" : "Feature"}
-                </Button>
-              </div>
-            </Card>
+                  {workshop.showOnHomepage ? "Featured" : "Feature"}</Button></div></div></Card>
           ))}
         </div>
       )}
 
       {/* Create Workshop Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[550px] bg-card border-border text-foreground">
           <DialogHeader>
-            <DialogTitle>Create New Workshop</DialogTitle>
+            <DialogTitle>{selectedWorkshop ? 'Edit Workshop' : 'Create New Workshop'}</DialogTitle>
             <DialogDescription>
-              Fill in the details to schedule and launch a new live robotics workshop.
+              {selectedWorkshop ? 'Update the details of the live robotics workshop.' : 'Fill in the details to schedule and launch a new live robotics workshop.'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreateSubmit} className="space-y-4 py-2">
+          <form onSubmit={handleSubmit} className="space-y-4 py-2">
             <div className="space-y-1">
               <Label htmlFor="title" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Title</Label>
               <Input
@@ -505,14 +538,14 @@ const Workshops: React.FC = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsCreateOpen(false)}
+                onClick={() => setIsFormOpen(false)}
                 disabled={isSubmitting}
                 className="border-border hover:bg-muted/10 font-semibold"
               >
                 Cancel
               </Button>
               <Button type="submit" disabled={isSubmitting} className="font-semibold">
-                {isSubmitting ? 'Creating...' : 'Create Workshop'}
+                {isSubmitting ? 'Saving...' : selectedWorkshop ? 'Update Workshop' : 'Create Workshop'}
               </Button>
             </DialogFooter>
           </form>
@@ -523,3 +556,12 @@ const Workshops: React.FC = () => {
 };
 
 export default Workshops;
+
+
+
+
+
+
+
+
+
