@@ -12,7 +12,11 @@ const API_BASE_URL = (() => {
     const cleanUrl = apiUrl.trim().replace(/\/$/, '');
     return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
   }
-  return import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  return import.meta.env.VITE_API_BASE_URL || (
+    import.meta.env.PROD
+      ? 'https://jg-innovative-hub-backend.onrender.com/api'
+      : 'http://localhost:5000/api'
+  );
 })();
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
