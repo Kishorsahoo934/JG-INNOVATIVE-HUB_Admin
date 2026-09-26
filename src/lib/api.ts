@@ -1,6 +1,8 @@
 const API_BASE = typeof import.meta.env.VITE_API_URL === 'string' && import.meta.env.VITE_API_URL.trim()
   ? import.meta.env.VITE_API_URL.trim().replace(/\/$/, '')
-  : '';
+  : import.meta.env.PROD
+    ? 'https://jg-innovative-hub-backend.onrender.com'
+    : 'http://localhost:5000';
 
 function getAuthHeaders(): HeadersInit {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('adminToken') ?? localStorage.getItem('authToken') : null;
