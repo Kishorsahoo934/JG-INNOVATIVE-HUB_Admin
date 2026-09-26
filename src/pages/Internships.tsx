@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFreshData } from '@/hooks/useFreshData';
-import { adminApi, InternshipApplication } from '@/services/adminApi';
+import { adminApi, InternshipApplication, InternshipPost } from '@/services/adminApi';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Briefcase, Search, AlertCircle, Mail, Phone, Calendar, 
@@ -38,8 +38,35 @@ const Internships: React.FC = () => {
   const [editForm, setEditForm] = useState<Partial<InternshipApplication>>({});
   const [isEditing, setIsEditing] = useState(false);
 
+  
+  const [isViewPostsOpen, setIsViewPostsOpen] = useState(false);
+  const [internshipPosts, setInternshipPosts] = useState<InternshipPost[]>([]);
+  const fetchPosts = async () => {
+    try {
+      const data = await adminApi.internshipPosts.getAll();
+      setInternshipPosts(data);
+    } catch (err: any) {
+      toast({ title: 'Error fetching posts', description: err.message, variant: 'destructive' });
+    }
+  };
+  
+  useEffect(() => {
+    if (isViewPostsOpen) {
+      fetchPosts();
+    }
+  }, [isViewPostsOpen]);
+  
+  const handleDeletePost = async (id: string) => {
+    if (!window.confirm('Delete this internship post?')) return;
+    try {
+      await adminApi.internshipPosts.delete(id);
+      fetchPosts();
+      toast({ title: 'Deleted', description: 'Post deleted' });
+    } catch (err: any) {}
+  };
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createForm, setCreateForm] = useState<Partial<InternshipApplication>>({});
+  const [createForm, setCreateForm] = useState<Partial<InternshipPost>>({});
   const [isCreating, setIsCreating] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
@@ -47,8 +74,14 @@ const Internships: React.FC = () => {
     e.preventDefault();
     setIsCreating(true);
     try {
-      await adminApi.internships.create(createForm);
-      toast({ title: 'Success', description: 'Application created successfully' });
+      const payload = {
+        ...createForm,
+        category: createForm.category || 'self-funded',
+        tier: createForm.tier || '1-month',
+        isActive: createForm.isActive !== undefined ? createForm.isActive : true
+      };
+      await adminApi.internshipPosts.create(payload);
+      toast({ title: 'Success', description: 'Internship Post created successfully' });
       setIsCreateOpen(false);
       setCreateForm({});
       fetchApplications();
@@ -369,10 +402,16 @@ const Internships: React.FC = () => {
               className="pl-10 bg-background/50 border-border"
             />
           </div>
-          <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0">
-            <Plus className="w-4 h-4" />
-            Add Application
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="gap-2 shrink-0 shadow-sm" onClick={() => setIsViewPostsOpen(true)}>
+              <FileText className="w-4 h-4" />
+              Manage Posts
+            </Button>
+            <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0 shadow-sm">
+              <Plus className="w-4 h-4" />
+              Post Internship
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -595,34 +634,29 @@ const Internships: React.FC = () => {
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Internship Application</DialogTitle>
-            <DialogDescription>Manually create an internship application for a student.</DialogDescription>
+            <DialogTitle>Post New Internship</DialogTitle>
+            <DialogDescription>Create a new internship listing to show on the frontend.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>Student Name *</Label>
-              <Input required value={createForm.name || ''} onChange={e => setCreateForm({...createForm, name: e.target.value})} placeholder="e.g. John Doe" />
+              <Label>Internship Title *</Label>
+              <Input required value={createForm.title || ''} onChange={e => setCreateForm({...createForm, title: e.target.value})} placeholder="e.g. Embedded Systems Intern" />
             </div>
             <div className="space-y-2">
-              <Label>Email Address *</Label>
-              <Input required type="email" value={createForm.email || ''} onChange={e => setCreateForm({...createForm, email: e.target.value})} placeholder="Student's email" />
-              <p className="text-[10px] text-muted-foreground">If the user doesn't exist, a placeholder account will be created automatically.</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Mobile Number *</Label>
-              <Input required value={createForm.mobile || ''} onChange={e => setCreateForm({...createForm, mobile: e.target.value})} placeholder="10-digit number" />
+              <Label>Description *</Label>
+              <textarea required className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={createForm.description || ''} onChange={e => setCreateForm({...createForm, description: e.target.value})} placeholder="Role responsibilities..." />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Category</Label>
-                <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.category || 'self-funded'} onChange={e => setCreateForm({...createForm, category: e.target.value as any})}>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.category || 'self-funded'} onChange={e => setCreateForm({...createForm, category: e.target.value as any})}>
                   <option className="bg-background text-foreground" value="paid">Paid</option>
                   <option className="bg-background text-foreground" value="self-funded">Self-funded</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Tier</Label>
-                <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.tier || '1-month'} onChange={e => setCreateForm({...createForm, tier: e.target.value})}>
+                <Label>Tier / Duration</Label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.tier || '1-month'} onChange={e => setCreateForm({...createForm, tier: e.target.value})}>
                   <option className="bg-background text-foreground" value="1-month">1 Month</option>
                   <option className="bg-background text-foreground" value="45-days">45 Days</option>
                   <option className="bg-background text-foreground" value="2-months">2 Months</option>
@@ -631,21 +665,19 @@ const Internships: React.FC = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Key Skills</Label>
-              <Input value={(createForm.skills || []).join(', ')} onChange={e => setCreateForm({...createForm, skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} placeholder="e.g. React, Node.js, Python (comma separated)" />
+              <Label>Required Skills (comma separated)</Label>
+              <Input value={(createForm.skills || []).join(', ')} onChange={e => setCreateForm({...createForm, skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} placeholder="e.g. C++, ROS, KiCad" />
             </div>
             <div className="space-y-2">
               <Label>Status</Label>
-              <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.status || 'pending'} onChange={e => setCreateForm({...createForm, status: e.target.value as any})}>
-                <option className="bg-background text-foreground" value="pending">Pending</option>
-                <option className="bg-background text-foreground" value="under-review">Under Review</option>
-                <option className="bg-background text-foreground" value="shortlisted">Shortlisted</option>
-                <option className="bg-background text-foreground" value="rejected">Rejected</option>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.isActive === false ? 'false' : 'true'} onChange={e => setCreateForm({...createForm, isActive: e.target.value === 'true'})}>
+                <option className="bg-background text-foreground" value="true">Active (Visible)</option>
+                <option className="bg-background text-foreground" value="false">Inactive (Hidden)</option>
               </select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={isCreating}>{isCreating ? 'Creating...' : 'Create'}</Button>
+              <Button type="submit" disabled={isCreating}>{isCreating ? 'Posting...' : 'Post Internship'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -715,6 +747,45 @@ const Internships: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isViewPostsOpen} onOpenChange={setIsViewPostsOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Internship Posts</DialogTitle>
+            <DialogDescription>View or delete active internship posts displayed on the frontend.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            {internshipPosts.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No internship posts created yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {internshipPosts.map(post => (
+                  <div key={post.id} className="p-4 border rounded-lg bg-card/50 flex justify-between items-start gap-4">
+                    <div>
+                      <h4 className="font-bold">{post.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{post.description}</p>
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="outline" className="text-[10px] capitalize">{post.category}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{post.tier || 'Any'}</Badge>
+                        <Badge variant={post.isActive ? 'default' : 'secondary'} className="text-[10px]">
+                          {post.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-destructive shrink-0 hover:bg-destructive/10" onClick={() => handleDeletePost(post.id!)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewPostsOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };

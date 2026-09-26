@@ -1164,6 +1164,19 @@ export const workshopsApi = {
 
 // ============ INTERNSHIPS ============
 
+
+export interface InternshipPost {
+  _id?: string;
+  id?: string;
+  title: string;
+  description: string;
+  category: 'paid' | 'self-funded';
+  tier?: string;
+  skills: string[];
+  isActive: boolean;
+  createdAt?: string;
+}
+
 export interface InternshipApplication {
   id: string;
   studentId: string | { id: string; name: string; email: string };
@@ -1211,6 +1224,33 @@ const toInternshipApplication = (i: Record<string, unknown>): InternshipApplicat
     status: (i.status as 'pending' | 'under-review' | 'shortlisted' | 'rejected') || 'pending',
     createdAt: (i.createdAt as string) || new Date().toISOString(),
   };
+};
+
+
+export const internshipPostsApi = {
+  getAll: async (): Promise<InternshipPost[]> => {
+    const res = await apiRequestRaw('/admin/internship-posts');
+    return (res.data || res).map((i: any) => ({ ...i, id: i._id })) as InternshipPost[];
+  },
+  create: async (payload: Partial<InternshipPost>): Promise<InternshipPost> => {
+    const res = await apiRequestRaw('/admin/internship-posts', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return { ...(res.data || res), id: (res.data || res)._id } as InternshipPost;
+  },
+  update: async (id: string, payload: Partial<InternshipPost>): Promise<InternshipPost> => {
+    const res = await apiRequestRaw(`/admin/internship-posts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    return { ...(res.data || res), id: (res.data || res)._id } as InternshipPost;
+  },
+  delete: async (id: string) => {
+    return apiRequestRaw(`/admin/internship-posts/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 export const internshipsApi = {
@@ -1484,6 +1524,7 @@ export const adminApi = {
   tutors: tutorsApi,
   workshops: workshopsApi,
   internships: internshipsApi,
+  internshipPosts: internshipPostsApi,
   gallery: galleryApi,
   projects: projectsApi,
     developedProducts: developedProductsApi,
