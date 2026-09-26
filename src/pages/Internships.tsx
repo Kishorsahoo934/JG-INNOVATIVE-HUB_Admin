@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useFreshData } from '@/hooks/useFreshData';
 import { adminApi, InternshipApplication } from '@/services/adminApi';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -6,6 +7,7 @@ import {
   ExternalLink, FileText, Globe, Check, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Trash2, Plus, Pencil } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -35,6 +37,43 @@ const Internships: React.FC = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<Partial<InternshipApplication>>({});
   const [isEditing, setIsEditing] = useState(false);
+
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<Partial<InternshipApplication>>({});
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      await adminApi.internships.create(createForm);
+      toast({ title: 'Success', description: 'Application created successfully' });
+      setIsCreateOpen(false);
+      setCreateForm({});
+      fetchApplications();
+    } catch (err: any) {
+      toast({ title: 'Create Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this internship application?')) return;
+    setIsDeletingId(id);
+    try {
+      await adminApi.internships.delete(id);
+      toast({ title: 'Success', description: 'Application deleted successfully' });
+      if (selectedApp?.id === id) setIsViewModalOpen(false);
+      fetchApplications();
+    } catch (err: any) {
+      toast({ title: 'Delete Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
+
 
   const openEditForm = (app: InternshipApplication) => {
     setEditForm({
@@ -84,9 +123,9 @@ const Internships: React.FC = () => {
     }
   };
 
-  useEffect(() => {
+  useFreshData(() => {
     fetchApplications();
-  }, []);
+  });
 
   const handleUpdateStatus = async (id: string, status: InternshipApplication['status']) => {
     setIsUpdatingId(id);
@@ -242,17 +281,38 @@ const Internships: React.FC = () => {
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: 'Action',
       render: (app: InternshipApplication) => (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0 hover:bg-muted"
-          onClick={() => handleViewApp(app)}
-          title="View Details"
-        >
-          <Eye className="w-4 h-4 text-primary" />
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 hover:bg-muted"
+            onClick={() => openEditForm(app)}
+            title="Edit Application"
+          >
+            <Pencil className="w-4 h-4 text-primary" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 hover:bg-muted"
+            onClick={() => handleViewApp(app)}
+            title="View Details"
+          >
+            <Eye className="w-4 h-4 text-primary" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive text-destructive"
+            onClick={() => handleDelete(app.id || (app as any)._id)}
+            title="Delete Application"
+            disabled={isDeletingId === (app.id || (app as any)._id)}
+          >
+            {isDeletingId === (app.id || (app as any)._id) ? <div className="w-4 h-4 border-2 border-destructive border-t-transparent animate-spin rounded-full" /> : <Trash2 className="w-4 h-4" />}
+          </Button>
+        </div>
       ),
     },
   ];
@@ -298,15 +358,21 @@ const Internships: React.FC = () => {
           })}
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, skills, cover..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-background/50 border-border"
-          />
+                {/* Search and Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, skills, cover..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-background/50 border-border"
+            />
+          </div>
+          <Button onClick={() => setIsCreateOpen(true)} className="gap-2 shrink-0">
+            <Plus className="w-4 h-4" />
+            Add Application
+          </Button>
         </div>
       </div>
 
@@ -525,6 +591,67 @@ const Internships: React.FC = () => {
         )}
             </Modal>
 
+      {/* Create Modal */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Internship Application</DialogTitle>
+            <DialogDescription>Manually create an internship application for a student.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Student Name *</Label>
+              <Input required value={createForm.name || ''} onChange={e => setCreateForm({...createForm, name: e.target.value})} placeholder="e.g. John Doe" />
+            </div>
+            <div className="space-y-2">
+              <Label>Email Address *</Label>
+              <Input required type="email" value={createForm.email || ''} onChange={e => setCreateForm({...createForm, email: e.target.value})} placeholder="Student's email" />
+              <p className="text-[10px] text-muted-foreground">If the user doesn't exist, a placeholder account will be created automatically.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Mobile Number *</Label>
+              <Input required value={createForm.mobile || ''} onChange={e => setCreateForm({...createForm, mobile: e.target.value})} placeholder="10-digit number" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.category || 'self-funded'} onChange={e => setCreateForm({...createForm, category: e.target.value as any})}>
+                  <option className="bg-background text-foreground" value="paid">Paid</option>
+                  <option className="bg-background text-foreground" value="self-funded">Self-funded</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tier</Label>
+                <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.tier || '1-month'} onChange={e => setCreateForm({...createForm, tier: e.target.value})}>
+                  <option className="bg-background text-foreground" value="1-month">1 Month</option>
+                  <option className="bg-background text-foreground" value="45-days">45 Days</option>
+                  <option className="bg-background text-foreground" value="2-months">2 Months</option>
+                  <option className="bg-background text-foreground" value="6-months">6 Months</option>
+                </select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Key Skills</Label>
+              <Input value={(createForm.skills || []).join(', ')} onChange={e => setCreateForm({...createForm, skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} placeholder="e.g. React, Node.js, Python (comma separated)" />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <select className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.status || 'pending'} onChange={e => setCreateForm({...createForm, status: e.target.value as any})}>
+                <option className="bg-background text-foreground" value="pending">Pending</option>
+                <option className="bg-background text-foreground" value="under-review">Under Review</option>
+                <option className="bg-background text-foreground" value="shortlisted">Shortlisted</option>
+                <option className="bg-background text-foreground" value="rejected">Rejected</option>
+              </select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isCreating}>{isCreating ? 'Creating...' : 'Create'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -547,35 +674,39 @@ const Internships: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Category</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-[#161c28] px-3 py-2 text-sm" value={editForm.category || 'paid'} onChange={e => setEditForm({ ...editForm, category: e.target.value as any })}>
-                  <option value="paid">Paid</option>
-                  <option value="self-funded">Self Funded</option>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm" value={editForm.category || 'paid'} onChange={e => setEditForm({ ...editForm, category: e.target.value as any })}>
+                  <option className="bg-background text-foreground" value="paid">Paid</option>
+                  <option className="bg-background text-foreground" value="self-funded">Self Funded</option>
                 </select>
               </div>
               <div className="space-y-1">
                 <Label>Tier</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-[#161c28] px-3 py-2 text-sm" value={editForm.tier || ''} onChange={e => setEditForm({ ...editForm, tier: e.target.value })}>
-                  <option value="">None</option>
-                  <option value="1-month">1 Month</option>
-                  <option value="45-days">45 Days</option>
-                  <option value="2-month">2 Months</option>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm" value={editForm.tier || ''} onChange={e => setEditForm({ ...editForm, tier: e.target.value })}>
+                  <option className="bg-background text-foreground" value="">None</option>
+                  <option className="bg-background text-foreground" value="1-month">1 Month</option>
+                  <option className="bg-background text-foreground" value="45-days">45 Days</option>
+                  <option className="bg-background text-foreground" value="2-month">2 Months</option>
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <Label>Payment Status</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-[#161c28] px-3 py-2 text-sm" value={editForm.paymentStatus || 'free'} onChange={e => setEditForm({ ...editForm, paymentStatus: e.target.value as any })}>
-                  <option value="free">Free</option>
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="failed">Failed</option>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm" value={editForm.paymentStatus || 'free'} onChange={e => setEditForm({ ...editForm, paymentStatus: e.target.value as any })}>
+                  <option className="bg-background text-foreground" value="free">Free</option>
+                  <option className="bg-background text-foreground" value="pending">Pending</option>
+                  <option className="bg-background text-foreground" value="paid">Paid</option>
+                  <option className="bg-background text-foreground" value="failed">Failed</option>
                 </select>
               </div>
               <div className="space-y-1">
                 <Label>Year of Study</Label>
                 <Input value={editForm.yearOfStudy || ''} onChange={e => setEditForm({ ...editForm, yearOfStudy: e.target.value })} />
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Key Skills</Label>
+              <Input value={(editForm.skills || []).join(', ')} onChange={e => setEditForm({ ...editForm, skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="e.g. React, Python" />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>

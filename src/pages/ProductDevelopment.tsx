@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFreshData } from '@/hooks/useFreshData';
 import { 
   Plus, Search, Edit2, Trash2, ArrowUpDown, Loader2, 
   Package, Check, X, ShieldAlert, Sparkles, Clock, Compass 
@@ -51,9 +52,9 @@ const ProductDevelopment = () => {
     }
   };
 
-  useEffect(() => {
+  useFreshData(() => {
     fetchProducts();
-  }, []);
+  });
 
   const openForm = (product?: DevelopedProduct) => {
     if (product) {
