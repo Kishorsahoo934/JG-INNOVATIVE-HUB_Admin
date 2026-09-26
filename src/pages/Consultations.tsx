@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useFreshData } from '@/hooks/useFreshData';
-import { Loader2, Search, BookOpen, Clock, FileText } from 'lucide-react';
+import { Loader2, Search, BookOpen, Clock, FileText, Trash2, Pencil } from 'lucide-react';
 import { adminApi, ConsultationBooking } from '@/services/adminApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,58 @@ const Consultations = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<ConsultationBooking | null>(null);
   const { toast } = useToast();
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
+  
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<ConsultationBooking>>({});
+  const [isEditing, setIsEditing] = useState(false);
+
+  const openEditForm = (app: ConsultationBooking) => {
+    setEditForm({
+      name: app.name,
+      email: app.email,
+      phone: app.phone,
+      productName: app.productName,
+      productCategory: app.productCategory,
+      currentStage: app.currentStage,
+      estimatedBudget: app.estimatedBudget,
+      expectedTimeline: app.expectedTimeline,
+      problemStatement: app.problemStatement,
+      detailedDescription: app.detailedDescription,
+    });
+    setSelectedItem(app);
+    setIsEditOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedItem) return;
+    setIsEditing(true);
+    try {
+      await adminApi.consultations.update(selectedItem.id, editForm);
+      toast({ title: 'Success', description: 'Application updated successfully' });
+      setIsEditOpen(false);
+      fetchConsultations();
+    } catch (err: any) {
+      toast({ title: 'Update Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this consultation application?')) return;
+    setIsDeletingId(id);
+    try {
+      await adminApi.consultations.delete(id);
+      toast({ title: 'Success', description: 'Application deleted successfully' });
+      fetchConsultations();
+    } catch (err: any) {
+      toast({ title: 'Delete Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDeletingId(null);
+    }
+  };
 
   const fetchConsultations = async () => {
     setIsLoading(true);
@@ -118,16 +170,24 @@ const Consultations = () => {
                           value={item.processStage || 'Idea Submitted'}
                           onChange={(e) => handleUpdateStage(item.id, e.target.value)}
                         >
-                          {stages.map(s => <option key={s} value={s}>{s}</option>)}
+                          {stages.map(s => <option className="bg-background text-foreground" key={s} value={s}>{s}</option>)}
                         </select>
                       </TableCell>
                       <TableCell>
                         {new Date(item.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setSelectedItem(item)}>
-                          View Details
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => openEditForm(item)} title="Edit">
+                            <Pencil className="w-4 h-4 text-primary" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedItem(item)}>
+                            View Details
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} disabled={isDeletingId === item.id} className="text-destructive hover:bg-destructive hover:text-white">
+                            {isDeletingId === item.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -202,7 +262,64 @@ const Consultations = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Consultation Application</DialogTitle>
+            <DialogDescription>Modify the product development application details.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Name</p>
+                <Input required value={editForm.name || ''} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Email</p>
+                <Input required type="email" value={editForm.email || ''} onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Phone</p>
+                <Input required value={editForm.phone || ''} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Product Name</p>
+                <Input value={editForm.productName || ''} onChange={e => setEditForm({ ...editForm, productName: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Category</p>
+                <Input value={editForm.productCategory || ''} onChange={e => setEditForm({ ...editForm, productCategory: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Stage</p>
+                <Input value={editForm.currentStage || ''} onChange={e => setEditForm({ ...editForm, currentStage: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Budget</p>
+                <Input value={editForm.estimatedBudget || ''} onChange={e => setEditForm({ ...editForm, estimatedBudget: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Timeline</p>
+                <Input value={editForm.expectedTimeline || ''} onChange={e => setEditForm({ ...editForm, expectedTimeline: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Problem Statement</p>
+              <textarea className="w-full h-24 rounded-md border border-input bg-transparent px-3 py-2 text-sm" value={editForm.problemStatement || ''} onChange={e => setEditForm({ ...editForm, problemStatement: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Detailed Description</p>
+              <textarea className="w-full h-32 rounded-md border border-input bg-transparent px-3 py-2 text-sm" value={editForm.detailedDescription || ''} onChange={e => setEditForm({ ...editForm, detailedDescription: e.target.value })} />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isEditing}>{isEditing ? 'Saving...' : 'Save Changes'}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+</div>
   );
 };
 
