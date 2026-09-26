@@ -1210,6 +1210,19 @@ const toInternshipApplication = (i: Record<string, unknown>): InternshipApplicat
 };
 
 export const internshipsApi = {
+
+  create: async (payload: Partial<InternshipApplication>): Promise<InternshipApplication> => {
+    const res = await apiRequestRaw('/admin/internships', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return toInternshipApplication((res.data || res) as Record<string, unknown>);
+  },
+  delete: async (applicationId: string): Promise<any> => {
+    return apiRequestRaw('/admin/internships/' + applicationId, {
+      method: 'DELETE',
+    });
+  },
   getAll: async (): Promise<InternshipApplication[]> => {
     const res = await apiRequestRaw('/admin/internships');
     const arr = res.data || res;
@@ -1410,6 +1423,47 @@ export const developedProductsApi = {
 };
 
 // Export all APIs
+// ============ CONSULTATIONS (PRODUCT DEVELOPMENT) API ============
+export interface ConsultationBooking {
+  _id: string;
+  id: string;
+  user: { _id: string; name: string; email: string };
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
+  company?: string;
+  productName?: string;
+  productCategory?: string;
+  currentStage?: string;
+  estimatedBudget?: string;
+  expectedTimeline?: string;
+  problemStatement?: string;
+  detailedDescription?: string;
+  processStage: 'Idea Submitted' | 'Requirement Discussion' | 'Project Confirmation' | 'Design & Development' | 'Testing & Delivery' | 'Completed';
+  amount: number;
+  status: string;
+  createdAt: string;
+}
+
+export const consultationsApi = {
+  getAll: async (): Promise<ConsultationBooking[]> => {
+    const res = await apiRequestRaw('/admin/consultations');
+    const arr = res.data || res;
+    return (Array.isArray(arr) ? arr : []).map((c: any) => ({
+      ...c,
+      id: c._id
+    })) as ConsultationBooking[];
+  },
+  updateStage: async (id: string, processStage: string): Promise<ConsultationBooking> => {
+    const res = await apiRequestRaw(`/admin/consultations/${id}/stage`, {
+      method: 'PATCH',
+      body: JSON.stringify({ processStage })
+    });
+    return { ...(res.data || res), id: (res.data || res)._id } as ConsultationBooking;
+  }
+};
+
 export const adminApi = {
   auth: authApi,
   dashboard: dashboardApi,
@@ -1429,9 +1483,12 @@ export const adminApi = {
   gallery: galleryApi,
   projects: projectsApi,
     developedProducts: developedProductsApi,
+  consultations: consultationsApi,
 };
 
 export default adminApi;
+
+
 
 
 

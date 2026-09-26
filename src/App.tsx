@@ -25,14 +25,17 @@ import Internships from "@/pages/Internships";
 import Gallery from "@/pages/Gallery";
 import Projects from "@/pages/Projects";
 import ProductDevelopment from "@/pages/ProductDevelopment";
+import Consultations from "@/pages/Consultations";
 import NotFound from "@/pages/NotFound";
+import RealtimeBoundary from "@/components/RealtimeBoundary";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AdminAuthProvider>
-      <AdminDataProvider>
+    <RealtimeBoundary>
+      <AdminAuthProvider>
+        <AdminDataProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -60,6 +63,7 @@ const App = () => (
                 <Route path="/internships" element={<Internships />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/product-development" element={<ProductDevelopment />} />
+                  <Route path="/consultations" element={<Consultations />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
               
@@ -71,8 +75,9 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
-      </AdminDataProvider>
-    </AdminAuthProvider>
+        </AdminDataProvider>
+      </AdminAuthProvider>
+    </RealtimeBoundary>
   </QueryClientProvider>
 );
 

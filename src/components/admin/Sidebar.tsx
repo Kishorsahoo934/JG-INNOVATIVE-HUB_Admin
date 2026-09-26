@@ -1,6 +1,7 @@
+import { useLocation, NavLink } from 'react-router-dom';
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
 import {
+  BookOpen,
   LayoutDashboard,
   Users,
   Package,
@@ -85,6 +86,7 @@ const sidebarSections: SidebarSection[] = [
     icon: Package,
     items: [
       { name: 'Product Development', path: '/product-development', icon: Package },
+      { name: 'Consultations', path: '/consultations', icon: BookOpen },
     ]
   },
   {

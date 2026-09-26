@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFreshData } from '@/hooks/useFreshData';
 import { adminApi, Workshop } from '@/services/adminApi';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -93,9 +94,9 @@ const Workshops: React.FC = () => {
     }
   };
 
-  useEffect(() => {
+  useFreshData(() => {
     fetchWorkshops();
-  }, []);
+  });
 
   const handleToggleHomepage = async (id: string, currentVal: boolean) => {
     setIsTogglingId(id);
