@@ -68,6 +68,24 @@ const Internships: React.FC = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<Partial<InternshipPost>>({});
   const [isCreating, setIsCreating] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingImage(true);
+    try {
+      const url = await adminApi.products.uploadImage(file);
+      if (url) {
+        setCreateForm(prev => ({ ...prev, image: url }));
+        toast({ title: 'Image Uploaded', description: 'Internship image uploaded successfully.' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Upload Failed', description: err.message || 'Failed to upload image', variant: 'destructive' });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -77,7 +95,7 @@ const Internships: React.FC = () => {
       const payload = {
         ...createForm,
         category: createForm.category || 'self-funded',
-        tier: createForm.tier || '1-month',
+        tier: createForm.tier || 'Custom',
         isActive: createForm.isActive !== undefined ? createForm.isActive : true
       };
       await adminApi.internshipPosts.create(payload);
@@ -646,22 +664,47 @@ const Internships: React.FC = () => {
               <Label>Description *</Label>
               <textarea required className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={createForm.description || ''} onChange={e => setCreateForm({...createForm, description: e.target.value})} placeholder="Role responsibilities..." />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Category</Label>
+            <div className="space-y-2">
+                <Label>Cover Image</Label>
+                <Input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploadingImage} className="bg-background/50 border-input" />
+                {isUploadingImage && <p className="text-xs text-primary animate-pulse mt-1">Uploading...</p>}
+                {createForm.image && (
+                  <div className="mt-2 border p-1 rounded bg-background inline-block">
+                    <img src={createForm.image} alt="Preview" className="h-16 rounded object-cover" />
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Date</Label>
+                  <Input type="date" value={createForm.startDate || ''} onChange={e => setCreateForm({...createForm, startDate: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Application Deadline</Label>
+                  <Input type="date" value={createForm.deadline || ''} onChange={e => setCreateForm({...createForm, deadline: e.target.value})} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input placeholder="e.g. Remote, Odisha" value={createForm.location || ''} onChange={e => setCreateForm({...createForm, location: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Stipend / Salary</Label>
+                  <Input placeholder="e.g. ₹10,000/mo or Unpaid" value={createForm.stipend || ''} onChange={e => setCreateForm({...createForm, stipend: e.target.value})} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Category</Label>
                 <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.category || 'self-funded'} onChange={e => setCreateForm({...createForm, category: e.target.value as any})}>
                   <option className="bg-background text-foreground" value="paid">Paid</option>
                   <option className="bg-background text-foreground" value="self-funded">Self-funded</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <Label>Tier / Duration</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={createForm.tier || '1-month'} onChange={e => setCreateForm({...createForm, tier: e.target.value})}>
-                  <option className="bg-background text-foreground" value="1-month">1 Month</option>
-                  <option className="bg-background text-foreground" value="45-days">45 Days</option>
-                  <option className="bg-background text-foreground" value="2-months">2 Months</option>
-                  <option className="bg-background text-foreground" value="6-months">6 Months</option>
-                </select>
+                <Label>Duration (e.g. 1 Month, 6 Months)</Label>
+                  <Input value={createForm.tier || ''} onChange={e => setCreateForm({...createForm, tier: e.target.value})} placeholder="e.g. 3 Months" />
               </div>
             </div>
             <div className="space-y-2">

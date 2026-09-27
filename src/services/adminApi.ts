@@ -1174,6 +1174,11 @@ export interface InternshipPost {
   tier?: string;
   skills: string[];
   isActive: boolean;
+  image?: string;
+  startDate?: string;
+  deadline?: string;
+  location?: string;
+  stipend?: string;
   createdAt?: string;
 }
 
