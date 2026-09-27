@@ -650,7 +650,7 @@ const Internships: React.FC = () => {
 
       {/* Create Modal */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Post New Internship</DialogTitle>
             <DialogDescription>Create a new internship listing to show on the frontend.</DialogDescription>
