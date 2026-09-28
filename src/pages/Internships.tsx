@@ -69,6 +69,65 @@ const Internships: React.FC = () => {
   const [createForm, setCreateForm] = useState<Partial<InternshipPost>>({});
   const [isCreating, setIsCreating] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const [isEditPostOpen, setIsEditPostOpen] = useState(false);
+  const [editPostForm, setEditPostForm] = useState<Partial<InternshipPost>>({});
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [isUploadingEditImage, setIsUploadingEditImage] = useState(false);
+
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingEditImage(true);
+    try {
+      const url = await adminApi.products.uploadImage(file);
+      if (url) {
+        setEditPostForm(prev => ({ ...prev, image: url }));
+        toast({ title: 'Image Uploaded', description: 'Image uploaded successfully.' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Upload Failed', description: err.message || 'Failed to upload image', variant: 'destructive' });
+    } finally {
+      setIsUploadingEditImage(false);
+    }
+  };
+
+  const openEditPostForm = (post: InternshipPost) => {
+    setEditPostForm({
+      title: post.title,
+      description: post.description,
+      category: post.category,
+      tier: post.tier,
+      skills: post.skills,
+      isActive: post.isActive,
+      image: post.image,
+      startDate: post.startDate,
+      deadline: post.deadline,
+      location: post.location,
+      stipend: post.stipend,
+    });
+    setEditingPostId(post.id || (post as any)._id || '');
+    setIsEditPostOpen(true);
+  };
+
+  const handleEditPostSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPostId) return;
+    setIsEditingPost(true);
+    try {
+      await adminApi.internshipPosts.update(editingPostId, editPostForm);
+      toast({ title: 'Success', description: 'Internship post updated successfully' });
+      setIsEditPostOpen(false);
+      setEditPostForm({});
+      setEditingPostId(null);
+      fetchPosts();
+    } catch (err: any) {
+      toast({ title: 'Update Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsEditingPost(false);
+    }
+  };
   
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -662,7 +721,7 @@ const Internships: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label>Description *</Label>
-              <textarea required className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={createForm.description || ''} onChange={e => setCreateForm({...createForm, description: e.target.value})} placeholder="Role responsibilities..." />
+              <textarea required className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-pre-wrap" value={createForm.description || ''} onChange={e => setCreateForm({...createForm, description: e.target.value})} placeholder="Role responsibilities..." style={{ whiteSpace: 'pre-wrap' }} />
             </div>
             <div className="space-y-2">
                 <Label>Cover Image</Label>
@@ -815,9 +874,14 @@ const Internships: React.FC = () => {
                         </Badge>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="text-destructive shrink-0 hover:bg-destructive/10" onClick={() => handleDeletePost(post.id!)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="icon" className="text-primary shrink-0 hover:bg-primary/10" onClick={() => openEditPostForm(post)} title="Edit Post">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive shrink-0 hover:bg-destructive/10" onClick={() => handleDeletePost(post.id!)} title="Delete Post">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -826,6 +890,84 @@ const Internships: React.FC = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsViewPostsOpen(false)}>Close</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Post Dialog */}
+      <Dialog open={isEditPostOpen} onOpenChange={setIsEditPostOpen}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Internship Post</DialogTitle>
+            <DialogDescription>Modify the internship post details.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditPostSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Internship Title *</Label>
+              <Input required value={editPostForm.title || ''} onChange={e => setEditPostForm({...editPostForm, title: e.target.value})} placeholder="e.g. Embedded Systems Intern" />
+            </div>
+            <div className="space-y-2">
+              <Label>Description *</Label>
+              <textarea required className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm whitespace-pre-wrap" value={editPostForm.description || ''} onChange={e => setEditPostForm({...editPostForm, description: e.target.value})} placeholder="Role responsibilities..." style={{ whiteSpace: 'pre-wrap' }} />
+            </div>
+            <div className="space-y-2">
+              <Label>Cover Image</Label>
+              <Input type="file" accept="image/*" onChange={handleEditImageUpload} disabled={isUploadingEditImage} className="bg-background/50 border-input" />
+              {isUploadingEditImage && <p className="text-xs text-primary animate-pulse mt-1">Uploading...</p>}
+              {editPostForm.image && (
+                <div className="mt-2 border p-1 rounded bg-background inline-block">
+                  <img src={editPostForm.image} alt="Preview" className="h-16 rounded object-cover" />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input type="date" value={editPostForm.startDate ? editPostForm.startDate.slice(0, 10) : ''} onChange={e => setEditPostForm({...editPostForm, startDate: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Application Deadline</Label>
+                <Input type="date" value={editPostForm.deadline ? editPostForm.deadline.slice(0, 10) : ''} onChange={e => setEditPostForm({...editPostForm, deadline: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Location</Label>
+                <Input placeholder="e.g. Remote, Odisha" value={editPostForm.location || ''} onChange={e => setEditPostForm({...editPostForm, location: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Stipend / Salary</Label>
+                <Input placeholder="e.g. ₹10,000/mo or Unpaid" value={editPostForm.stipend || ''} onChange={e => setEditPostForm({...editPostForm, stipend: e.target.value})} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={editPostForm.category || 'self-funded'} onChange={e => setEditPostForm({...editPostForm, category: e.target.value as any})}>
+                  <option className="bg-background text-foreground" value="paid">Paid</option>
+                  <option className="bg-background text-foreground" value="self-funded">Self-funded</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Duration (e.g. 1 Month, 6 Months)</Label>
+                <Input value={editPostForm.tier || ''} onChange={e => setEditPostForm({...editPostForm, tier: e.target.value})} placeholder="e.g. 3 Months" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Required Skills (comma separated)</Label>
+              <Input value={(editPostForm.skills || []).join(', ')} onChange={e => setEditPostForm({...editPostForm, skills: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} placeholder="e.g. C++, ROS, KiCad" />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground" value={editPostForm.isActive === false ? 'false' : 'true'} onChange={e => setEditPostForm({...editPostForm, isActive: e.target.value === 'true'})}>
+                <option className="bg-background text-foreground" value="true">Active (Visible)</option>
+                <option className="bg-background text-foreground" value="false">Inactive (Hidden)</option>
+              </select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditPostOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isEditingPost}>{isEditingPost ? 'Saving...' : 'Save Changes'}</Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
