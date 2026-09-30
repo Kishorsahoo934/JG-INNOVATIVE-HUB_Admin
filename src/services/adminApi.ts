@@ -1489,6 +1489,7 @@ export interface ConsultationBooking {
   expectedTimeline?: string;
   problemStatement?: string;
   detailedDescription?: string;
+  attachments?: Array<{ url: string; publicId: string; filename: string }>;
   processStage: 'Idea Submitted' | 'Requirement Discussion' | 'Project Confirmation' | 'Design & Development' | 'Testing & Delivery' | 'Completed';
   amount: number;
   status: string;
@@ -1513,6 +1514,22 @@ export const consultationsApi = {
   }
 };
 
+export interface Feedback {
+  _id: string;
+  user?: { _id: string; name: string; email: string };
+  rating: number;
+  message: string;
+  device?: string;
+  createdAt: string;
+}
+
+const feedbackApi = {
+  getAll: async (): Promise<Feedback[]> => {
+    const res = await apiRequestRaw('/feedback');
+    return res.data || res;
+  }
+};
+
 export const adminApi = {
   auth: authApi,
   dashboard: dashboardApi,
@@ -1534,6 +1551,7 @@ export const adminApi = {
   projects: projectsApi,
     developedProducts: developedProductsApi,
   consultations: consultationsApi,
+  feedback: feedbackApi,
 };
 
 export default adminApi;

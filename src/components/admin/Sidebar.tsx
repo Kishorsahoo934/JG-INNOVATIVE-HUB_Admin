@@ -57,6 +57,7 @@ const sidebarSections: SidebarSection[] = [
       { name: 'Users', path: '/users', icon: Users },
       { name: 'Gallery', path: '/gallery', icon: Image },
       { name: 'Notifications', path: '/notifications', icon: Bell },
+      { name: 'Feedback', path: '/feedback', icon: MessageSquare },
       { name: 'Settings', path: '/settings', icon: Settings },
     ]
   },
