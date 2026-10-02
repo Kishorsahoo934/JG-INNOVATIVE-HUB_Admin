@@ -1530,6 +1530,24 @@ const feedbackApi = {
   }
 };
 
+export const projectBookingsApi = {
+  getAll: async (): Promise<any[]> => {
+    const res = await apiRequestRaw('/admin/project-bookings');
+    const arr = res.data || res;
+    return (Array.isArray(arr) ? arr : []).map((c: any) => ({
+      ...c,
+      id: c._id
+    })) as any[];
+  },
+  updateStage: async (id: string, processStage: string): Promise<any> => {
+    const res = await apiRequestRaw(`/admin/project-bookings/${id}/stage`, {
+      method: 'PATCH',
+      body: JSON.stringify({ processStage })
+    });
+    return { ...(res.data || res), id: (res.data || res)._id } as any;
+  }
+};
+
 export const adminApi = {
   auth: authApi,
   dashboard: dashboardApi,
@@ -1552,14 +1570,7 @@ export const adminApi = {
     developedProducts: developedProductsApi,
   consultations: consultationsApi,
   feedback: feedbackApi,
+  projectBookings: projectBookingsApi,
 };
 
 export default adminApi;
-
-
-
-
-
-
-
-

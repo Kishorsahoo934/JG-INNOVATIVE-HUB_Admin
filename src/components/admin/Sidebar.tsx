@@ -88,6 +88,7 @@ const sidebarSections: SidebarSection[] = [
     items: [
       { name: 'Product Development', path: '/product-development', icon: Package },
       { name: 'Consultations', path: '/consultations', icon: BookOpen },
+      { name: 'Project Bookings', path: '/project-bookings', icon: BookOpen },
     ]
   },
   {

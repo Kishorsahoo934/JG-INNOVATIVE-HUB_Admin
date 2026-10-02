@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useFreshData } from '@/hooks/useFreshData';
 import { Loader2, Search, BookOpen, Clock, FileText, Trash2, Pencil } from 'lucide-react';
-import { adminApi, ConsultationBooking } from '@/services/adminApi';
+import { adminApi, ProjectBooking } from '@/services/adminApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -13,20 +13,21 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 
+const stages = ['Idea Submitted', 'Requirement Discussion', 'Project Confirmation', 'Design & Development', 'Testing & Delivery', 'Completed'];
 
-const Consultations = () => {
-  const [consultations, setConsultations] = useState<ConsultationBooking[]>([]);
+const ProjectBookings = () => {
+  const [projectBookings, setProjectBookings] = useState<ProjectBooking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedItem, setSelectedItem] = useState<ConsultationBooking | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ProjectBooking | null>(null);
   const { toast } = useToast();
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState<Partial<ConsultationBooking>>({});
+  const [editForm, setEditForm] = useState<Partial<ProjectBooking>>({});
   const [isEditing, setIsEditing] = useState(false);
 
-  const openEditForm = (app: ConsultationBooking) => {
+  const openEditForm = (app: ProjectBooking) => {
     setEditForm({
       name: app.name,
       email: app.email,
@@ -48,10 +49,10 @@ const Consultations = () => {
     if (!selectedItem) return;
     setIsEditing(true);
     try {
-      await adminApi.consultations.update(selectedItem.id, editForm);
+      await adminApi.projectBookings.update(selectedItem.id, editForm);
       toast({ title: 'Success', description: 'Application updated successfully' });
       setIsEditOpen(false);
-      fetchConsultations();
+      fetchProjectBookings();
     } catch (err: any) {
       toast({ title: 'Update Failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -60,12 +61,12 @@ const Consultations = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this consultation application?')) return;
+    if (!window.confirm('Are you sure you want to delete this projectBooking application?')) return;
     setIsDeletingId(id);
     try {
-      await adminApi.consultations.delete(id);
+      await adminApi.projectBookings.delete(id);
       toast({ title: 'Success', description: 'Application deleted successfully' });
-      fetchConsultations();
+      fetchProjectBookings();
     } catch (err: any) {
       toast({ title: 'Delete Failed', description: err.message, variant: 'destructive' });
     } finally {
@@ -73,11 +74,11 @@ const Consultations = () => {
     }
   };
 
-  const fetchConsultations = async () => {
+  const fetchProjectBookings = async () => {
     setIsLoading(true);
     try {
-      const data = await adminApi.consultations.getAll();
-      setConsultations(data);
+      const data = await adminApi.projectBookings.getAll();
+      setProjectBookings(data);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message || 'Failed to fetch' });
     } finally {
@@ -85,22 +86,22 @@ const Consultations = () => {
     }
   };
 
-  useFreshData(fetchConsultations, 30000);
+  useFreshData(fetchProjectBookings, 30000);
 
   const handleUpdateStage = async (id: string, stage: string) => {
     try {
-      await adminApi.consultations.updateStage(id, stage);
+      await adminApi.projectBookings.updateStage(id, stage);
       toast({ title: 'Success', description: 'Stage updated successfully.' });
       if (selectedItem && selectedItem.id === id) {
         setSelectedItem(prev => prev ? { ...prev, processStage: stage as any } : null);
       }
-      fetchConsultations();
+      fetchProjectBookings();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
     }
   };
 
-  const filtered = consultations.filter(c => 
+  const filtered = projectBookings.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     (c.productName && c.productName.toLowerCase().includes(searchQuery.toLowerCase())) ||
     c.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,7 +111,7 @@ const Consultations = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Consultations & Applications</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">ProjectBookings & Applications</h1>
           <p className="text-muted-foreground mt-1 text-sm">
             Manage Product Development bookings and track process stages.
           </p>
@@ -140,7 +141,7 @@ const Consultations = () => {
                 <TableRow>
                   <TableHead>Applicant</TableHead>
                   <TableHead>Product / Category</TableHead>
-                  
+                  <TableHead>Process Stage</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -163,7 +164,15 @@ const Consultations = () => {
                         <p className="font-semibold">{item.productName || 'N/A'}</p>
                         <Badge variant="outline">{item.productCategory || 'Other'}</Badge>
                       </TableCell>
-                      
+                      <TableCell>
+                        <select 
+                          className="flex h-9 w-40 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          value={item.processStage || 'Idea Submitted'}
+                          onChange={(e) => handleUpdateStage(item.id, e.target.value)}
+                        >
+                          {stages.map(s => <option className="bg-background text-foreground" key={s} value={s}>{s}</option>)}
+                        </select>
+                      </TableCell>
                       <TableCell>
                         {new Date(item.createdAt).toLocaleDateString()}
                       </TableCell>
@@ -192,7 +201,7 @@ const Consultations = () => {
       <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Consultation Application</DialogTitle>
+            <DialogTitle>Project Booking Application</DialogTitle>
             <DialogDescription>Full details submitted by the client.</DialogDescription>
           </DialogHeader>
           
@@ -211,7 +220,10 @@ const Consultations = () => {
                   <h4 className="text-sm font-semibold text-muted-foreground">Company</h4>
                   <p>{selectedItem.company || 'N/A'}</p>
                 </div>
-                
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground">Process Stage</h4>
+                  <Badge variant="default">{selectedItem.processStage || 'Idea Submitted'}</Badge>
+                </div>
               </div>
 
               <div className="border-t pt-4">
@@ -252,7 +264,7 @@ const Consultations = () => {
                   <h4 className="font-semibold text-foreground mb-3">Attachments:</h4>
                   <div className="flex flex-wrap gap-3">
                     {selectedItem.attachments.map((file: any, i: number) => {
-                      const isImage = file.filename && file.filename.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null;
+                      const isImage = file.filename.match(/\.(jpeg|jpg|gif|png|webp)$/i) != null;
                       return (
                         <a 
                           key={i} 
@@ -267,7 +279,7 @@ const Consultations = () => {
                           ) : (
                             <div className="w-10 h-10 bg-primary/10 text-primary flex items-center justify-center rounded-md font-bold text-xs">DOC</div>
                           )}
-                          <span className="text-sm truncate max-w-[150px]">{file.filename || 'Attachment'}</span>
+                          <span className="text-sm truncate max-w-[150px]">{file.filename}</span>
                         </a>
                       );
                     })}
@@ -282,7 +294,7 @@ const Consultations = () => {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Consultation Application</DialogTitle>
+            <DialogTitle>Edit Project Booking Application</DialogTitle>
             <DialogDescription>Modify the product development application details.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4">
@@ -335,8 +347,43 @@ const Consultations = () => {
           </form>
         </DialogContent>
       </Dialog>
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Application</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <Input value={editForm.name || ''} onChange={(e) => setEditForm({...editForm, name: e.target.value})} required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input type="email" value={editForm.email || ''} onChange={(e) => setEditForm({...editForm, email: e.target.value})} required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Phone</label>
+                <Input value={editForm.phone || ''} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Product Name</label>
+                <Input value={editForm.productName || ''} onChange={(e) => setEditForm({...editForm, productName: e.target.value})} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isEditing}>
+                {isEditing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
 </div>
   );
 };
 
-export default Consultations;
+export default ProjectBookings;
