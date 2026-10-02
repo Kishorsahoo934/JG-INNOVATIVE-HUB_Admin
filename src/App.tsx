@@ -26,6 +26,7 @@ import Gallery from "@/pages/Gallery";
 import Projects from "@/pages/Projects";
 import ProductDevelopment from "@/pages/ProductDevelopment";
 import Consultations from "@/pages/Consultations";
+import ProjectBookings from "@/pages/ProjectBookings";
 import Feedback from "@/pages/Feedback";
 import NotFound from "@/pages/NotFound";
 import RealtimeBoundary from "@/components/RealtimeBoundary";
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/product-development" element={<ProductDevelopment />} />
                   <Route path="/consultations" element={<Consultations />} />
+                <Route path="/project-bookings" element={<ProjectBookings />} />
                 <Route path="/feedback" element={<Feedback />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>
